@@ -1,3 +1,5 @@
+/* eslint-disable no-continue */
+
 import http from 'http';
 import { prepareFaucet } from './task-tap-faucet';
 import { prepareAMMTrade } from './task-trade-amm';
@@ -96,9 +98,7 @@ function updateConfig(config) {
   }
 }
 
-let oldConfig;
-
-function startServer() {
+async function startServer() {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     console.log(`pathname ${url.pathname}, ${req.method}`);
@@ -134,6 +134,9 @@ function startServer() {
     }
   });
   server.listen(3352, '127.0.0.1');
+  return new Promise((resolve, reject) => {
+    server.on('listening', resolve).on('error', reject);
+  });
 }
 
 export default async function runCycles(homePromise, deployPowers) {
@@ -151,7 +154,8 @@ export default async function runCycles(homePromise, deployPowers) {
     status[name] = { active: 0, succeeded: 0, failed: 0 };
   }
   console.log('all tasks ready');
-  startServer();
+  await startServer();
+  console.log('server running on 127.0.0.1:3352');
 
   if (!checkConfig(currentConfig)) {
     throw Error('bad config');
